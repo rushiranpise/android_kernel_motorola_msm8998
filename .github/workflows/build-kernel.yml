@@ -9,7 +9,7 @@ jobs:
       - name: Installing Dependencies
         run: |
           sudo apt update -y
-          sudo apt-get install -y zip flex bison libncurses-dev gawk  libiberty-dev autoconf kmod bc build-essential gcc libc6 curl libstdc++6 git wget libssl-dev cpio p7zip-full ccache
+          sudo apt-get install -y llvm zip flex bison libncurses-dev gawk  libiberty-dev autoconf kmod bc build-essential gcc libc6 curl libstdc++6 git wget libssl-dev cpio p7zip-full ccache
           sudo apt clean
       - name: Cloning Sources and Toolchain
         run: |
@@ -18,10 +18,9 @@ jobs:
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/aarch64-linux-android-4.9
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/arm-linux-androideabi-4.9
           git clone https://github.com/rushiranpise/AnyKernel3.git
-#       - name: Add KernelSU to Kernel Source Tree
-#         run: |
-#           cd kernel_xiaomi_raphael_PE
-#           curl -LSs "https://raw.githubusercontent.com/SoDebug/KernelSU/commit_ad4d8e939ebe6f55a1d50ace42a03e3fecd3c59a/kernel/setup.sh" | bash -
+      - name: Add KernelSU to Kernel Source Tree
+        run: |
+          cd android_kernel_motorola_msm8998
       - name: Compiling Kernel
         run: |
           CLANG=~/clang/clang-r487747/bin
@@ -39,15 +38,15 @@ jobs:
           make LLVM=1 LLVM_IAS=1 CC="ccache clang" -j$(grep -c ^processor /proc/cpuinfo)
           popd
           
-#       - name: Creating Config Info
-#         run: |
-#           echo "Device: RedMi K20 Pro 
-#           Source Code Tree: PixelExperience branch:thirteen
-#           Code: raphael
-#           Contain KernelSU: YES(Manully_Intergrate)
-#           Build Code: $(date +%Y%m%d)_${{ github.run_number }}
-#           Only For Pixel Experience 13(Official) commit:e21123c
-#           " >> INFO.txt
+      - name: Creating Config Info
+        run: |
+          echo "Device: Motorola One Power
+          Source Code Tree: LineageOS branch:lineage-20.0
+          Code: chef
+          Contain KernelSU: YES(Manully_Intergrate)
+          Build Code: $(date +%Y%m%d)_${{ github.run_number }}
+          Only For LineageOS
+          " >> INFO.txt
           
       - name: Packaging the Kernel
         run: |
