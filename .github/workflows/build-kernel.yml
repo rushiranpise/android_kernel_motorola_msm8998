@@ -1,0 +1,148 @@
+name: Build Kernel
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      kernelsu:
+        description: "Integration of KernelSU"
+        required: true
+        type: boolean
+jobs:
+  build:
+    strategy:
+      matrix:
+        device: [chef]
+
+    name: Build Kernel-${{ matrix.device }}
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
+
+    steps:
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y bison build-essential curl libssl-dev git zip python2 python3 flex libncurses5-dev wget aria2
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache Build Tools
+        id: cache-proton-clang
+        uses: actions/cache@v3
+        with:
+          path: proton-clang
+          key: proton-clang
+
+      - name: Download Build Tools
+        if: steps.cache-proton-clang.outputs.cache-hit != 'true'
+        run: |
+          url="$(curl -s https://api.github.com/repos/kdrag0n/proton-clang/releases/latest | jq -r .tarball_url)"
+          aria2c --no-conf --log-level=info -x16 -s16 -j5 -c -R --async-dns=false --check-integrity=true --continue=true --allow-overwrite=true --conditional-get=true --out=proton-clang.tar.gz "$url"
+          tar -xzf proton-clang.tar.gz
+          rm proton-clang.tar.gz
+          name=$(stat -c "%n" *proton-clang*)
+          mkdir proton-clang
+          mv "$name"/* proton-clang
+          rm -rf "$name"
+
+      - name: Setup kernel source
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          repository: rushiranpise/android_kernel_motorola_msm899
+          ref: test
+          path: kernel-source
+
+      - name: Checkout Anykernel
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          repository: Laulan56/anykernel
+          ref: miui-r
+          path: anykernel
+
+      - name: Setup KernelSU
+        if: ${{ inputs.kernelsu != 'false' }}
+        working-directory: kernel-source
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+          defconfig="arch/arm64/configs/${{ matrix.device }}_defconfig"
+          echo "CONFIG_MODULES=y" >> $defconfig
+          echo "CONFIG_KPROBES=y" >> $defconfig
+          echo "CONFIG_HAVE_KPROBES=y" >> $defconfig
+          echo "CONFIG_KPROBE_EVENTS=y" >> $defconfig
+          cd KernelSU
+          echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
+          cd -
+
+      - name: Setup Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: MIUI-Kernel-${{ matrix.device }}
+          save: ${{ github.event_name != 'pull_request' }}
+          max-size: 2G
+
+      - name: Build Kernel
+        working-directory: kernel-source
+        run: |
+          export PATH="$GITHUB_WORKSPACE/proton-clang/bin:$PATH"
+          export PATH="/usr/lib/ccache:$PATH"
+          git apply $GITHUB_WORKSPACE/.github/patches/4.14/*.patch
+          date=$(date +"%Y%m%d%H%M")
+          middlever=r23
+          echo "date=$date" >> $GITHUB_ENV
+          echo "middlever=$middlever" >> $GITHUB_ENV
+          args="-j`nproc` O=out LLVM=1 CCACHE=ccache ARCH=arm64 SUBARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LOCALVERSION=-$middlever-$date"
+          echo "Building kernel with $args"
+
+          export KBUILD_BUILD_USER="Howard"
+          export KBUILD_BUILD_HOST="MarisaKernel"
+
+          make $args ${{ matrix.device }}_defconfig && make $args
+
+      - name: Upload MIUI-kernel-${{ matrix.device }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: MIUI-kernel-${{ matrix.device }}
+          path: kernel-source/out/arch/arm64/boot/*
+
+      - name: Prepare Anykernel
+        working-directory: anykernel
+        run: |
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image-dtb .
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/dtbo.img .
+          ZIP_NAME="MarisaKernel-${{ matrix.device }}-miui-r-${{ env.middlever }}-${{ env.date }}"
+          if [ ${{ inputs.kernelsu }} != 'false' ]; then
+            ZIP_NAME+="-ksu-${{ env.KSU_VERSION }}"
+          fi
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          zip -r "$ZIP_NAME.zip" *
+          mv "$ZIP_NAME.zip" $GITHUB_WORKSPACE
+
+      - name: Upload Anykernel
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: anykernel/*
+
+      - name: Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: |
+            kernel-source/out/arch/arm64/boot/*
+            ${{ env.ZIP_NAME }}.zip
+          draft: true
+          tag_name: ${{ github.ref }}-${{ matrix.device }}
+
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 0
+          keep_minimum_runs: 10
