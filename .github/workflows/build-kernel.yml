@@ -22,7 +22,9 @@ jobs:
           git clone https://github.com/rushiranpise/AnyKernel3.git
       - name: Add KernelSU to Kernel Source Tree
         run: |
-          cd android_kernel_motorola_msm8998
+           cd android_kernel_motorola_msm8998
+#           get fetch https://github.com/rushiranpise/android_kernel_motorola_msm8998 ksu && git cherry-pick 92a6276987bcdf05a2ef057900222c2f25c8bbef 
+#           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
       - name: Compiling Kernel
         run: |
           CLANG=~/clang/clang-r487747/bin
