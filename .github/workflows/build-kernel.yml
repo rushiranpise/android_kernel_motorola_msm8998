@@ -1,34 +1,56 @@
 name: Build Kernel
 on:
   push:
-    branches:
-    - test
+    branches: ["test"]
+  workflow_dispatch:
 
 jobs:
-  KSUForChef:
+  build:
+    strategy:
+      matrix:
+        device: [chef, beckham]
+        
+    name: Build KernelSU-${{ matrix.device }}
     runs-on: ubuntu-latest
+    
     steps:
       - name: Installing Dependencies
         run: |
           sudo apt update -y
           sudo apt-get install -y lld binutils clang llvm zip flex bison libncurses-dev gawk  libiberty-dev autoconf kmod bc build-essential gcc libc6 curl libstdc++6 git wget libssl-dev cpio p7zip-full ccache
           sudo apt clean
+          
+      - name: Checkout
+        uses: actions/checkout@v3
+        
       - name: Cloning Sources and Toolchain
         run: |
-          git clone https://github.com/rushiranpise/android_kernel_motorola_msm8998.git -b test
+          git clone https://github.com/LineageOS/android_kernel_motorola_msm8998.git -b lineage-20
           git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 --depth=1 --single-branch --no-tags -b master ~/clang
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/aarch64-linux-android-4.9
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/arm-linux-androideabi-4.9
           git clone https://github.com/rushiranpise/AnyKernel3.git
+          
       - name: Add KernelSU to Kernel Source Tree
         run: |
            cd android_kernel_motorola_msm8998
            git reset --hard eabf3cf39da38198c022a42e7b8fa7df3cbdb924
-           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -           
-           get fetch https://github.com/rushiranpise/android_kernel_motorola_msm8998 ksu && git cherry-pick 92a6276987bcdf05a2ef057900222c2f25c8bbef 
+           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+           cd KernelSU
+           echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
+           cd -
+           git fetch https://github.com/rushiranpise/android_kernel_motorola_msm8998 ksu && git cherry-pick 92a6276987bcdf05a2ef057900222c2f25c8bbef 
 
+      - name: Setup Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: Build-KernelSU-${{ matrix.device }}
+          save: ${{ github.event_name != 'pull_request' }}
+          max-size: 2G
+          
       - name: Compiling Kernel
         run: |
+          defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
           CLANG=~/clang/clang-r487747/bin
           GCC32=~/arm-linux-androideabi-4.9/bin
           GCC64=~/aarch64-linux-android-4.9/bin
@@ -39,16 +61,19 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-android-
           export CROSS_COMPILE_ARM32=arm-linux-androideabi-
           output_dir=out
+          date=$(date +"%Y%m%d%H%M")
+          export PATH="/usr/lib/ccache:$PATH"
+          echo "date=$date" >> $GITHUB_ENV
           pushd android_kernel_motorola_msm8998
-          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_chef_defconfig
+          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig
           make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" -j$(grep -c ^processor /proc/cpuinfo)
           popd
           
       - name: Creating Config Info
         run: |
-          echo "Device: Motorola One Power
-          Source Code Tree: LineageOS branch:lineage-20.0
-          Code: chef
+          echo "Device: ${{ matrix.device }}
+          Source Code Tree: LineageOS branch:lineage-20
+          Code: ${{ matrix.device }}
           Contain KernelSU: YES(Manully_Intergrate)
           Build Code: $(date +%Y%m%d)_${{ github.run_number }}
           Only For LineageOS
@@ -59,13 +84,21 @@ jobs:
           cp -v android_kernel_motorola_msm8998/out/arch/arm64/boot/Image.gz \
                      AnyKernel3/
           pushd AnyKernel3
-          7z a -mx9 ../android_kernel_motorola_msm8998.zip *
+          ZIP_NAME="KernelSU-${{ env.KSU_VERSION }}-${{ matrix.device }}"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          7z a -mx9 ../"$ZIP_NAME.zip" *
           popd
-      - name: Uploading Kernel Package to GH-Release
+      - name: Uploading Kernel Package-${{ matrix.device }}
         uses: ncipollo/release-action@v1.8.6
         with:
-          artifacts: android_kernel_motorola_msm8998.zip
-          name: " android_kernel_motorola_msm8998"
-          tag: " ${{ github.run_number }}_android_kernel_motorola_msm8998"
+          artifacts: ${{ env.ZIP_NAME }}.zip
+          name: "KernelSU"
+          tag: " ${{ github.run_number }}-${{ matrix.device }}"
           bodyFile: "INFO.txt"
           token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Delete workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 0
+          keep_minimum_runs: 10
