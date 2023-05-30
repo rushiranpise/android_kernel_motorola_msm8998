@@ -12,6 +12,10 @@ jobs:
         
     name: Build KernelSU-${{ matrix.device }}
     runs-on: ubuntu-latest
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
     
     steps:
       - name: Installing Dependencies
@@ -23,17 +27,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         
-      - name: Cloning Sources and Toolchain
+      - name: Cache Build Tools
+        id: cache-aosp-clang
+        uses: actions/cache@v3
+        with:
+          path: aosp-clang
+          key: aosp-clang  
+        
+      - name: Download Build Tools
+        if: steps.cache-aosp-clang.outputs.cache-hit != 'true'
         run: |
-          git clone https://github.com/Aflaungos/android_kernel_motorola_msm8998.git -b lineage-20-BoostKernel --depth=1
           git clone https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 --depth=1 --single-branch --no-tags -b master ~/clang
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/aarch64-linux-android-4.9
           git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 -b android-13.0.0_r0.13 --depth=1 --single-branch --no-tags ~/arm-linux-androideabi-4.9
-          git clone https://github.com/rushiranpise/AnyKernel3.git
+      
+      - name: Setup kernel source
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          repository: Aflaungos/android_kernel_motorola_msm8998
+          ref: lineage-20-BoostKernel
+          path: kernel-source
           
-      - name: Add KernelSU to Kernel Source Tree
+      - name: Checkout Anykernel
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          repository: rushiranpise/AnyKernel3
+          ref: master
+          path: anykernel     
+      
+      - name: Setup KernelSU
+        working-directory: kernel-source
         run: |
-           cd android_kernel_motorola_msm8998
+           git config --global user.email "rushiranpise17@gmail.com"
+           git config --global user.name "Rushi Ranpise"        
+
+           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
            defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
            echo "CONFIG_KPROBES=y" >> $defconfig
            echo "CONFIG_HAVE_KPROBES=y" >> $defconfig
@@ -41,8 +71,7 @@ jobs:
            cd KernelSU
            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
-           git config --global user.email "rushiranpise17@gmail.com"
-           git config --global user.name "Rushi Ranpise"
+
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -51,7 +80,8 @@ jobs:
           save: ${{ github.event_name != 'pull_request' }}
           max-size: 2G
           
-      - name: Compiling Kernel
+      - name: Build Kernel
+        working-directory: kernel-source
         run: |
           defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
           CLANG=~/clang/clang-r487747/bin
@@ -67,36 +97,45 @@ jobs:
           date=$(date +"%Y%m%d%H%M")
           export PATH="/usr/lib/ccache:$PATH"
           echo "date=$date" >> $GITHUB_ENV
-          pushd android_kernel_motorola_msm8998
-          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig
-          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" -j$(grep -c ^processor /proc/cpuinfo)
-          popd
+          args="-j`nproc` LLVM=1 LLVM_IAS=1 CC="ccache clang" ARCH=arm64 SUBARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          echo "Building kernel with $args"  
+          make $args lineageos_${{ matrix.device }}_defconfig && make $args
           
-      - name: Creating Config Info
-        run: |
-          echo "Device codename: ${{ matrix.device }}
-          Source Code Tree: LineageOS branch:lineage-20
-          Build Code: ${{ env.KSU_VERSION }} $(date +%Y%m%d)_${{ github.run_number }}
-          Only For LineageOS Based Roms
-          " >> INFO.txt
-          
-      - name: Packaging the Kernel
-        run: |
-          cp -v android_kernel_motorola_msm8998/out/arch/arm64/boot/Image.gz \
-                     AnyKernel3/
-          pushd AnyKernel3
-          ZIP_NAME="KernelSU-${{ env.KSU_VERSION }}-${{ matrix.device }}"
-          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
-          7z a -mx9 ../"$ZIP_NAME.zip" *
-          popd
-      - name: Uploading Kernel Package-${{ matrix.device }}
-        uses: ncipollo/release-action@v1.8.6
+      - name: Upload KernelSU-${{ matrix.device }}
+        uses: actions/upload-artifact@v3
         with:
-          artifacts: ${{ env.ZIP_NAME }}.zip
-          name: "KernelSU For ${{ matrix.device }}"
-          tag: " ${{ github.run_number }}-${{ matrix.device }}"
-          bodyFile: "INFO.txt"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          name: KernelSU-${{ matrix.device }}
+          path: kernel-source/out/arch/arm64/boot/*
+          
+      - name: Prepare Anykernel
+        working-directory: anykernel
+        run: |
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image-dtb .
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/dtbo.img .
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz .
+          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz-dtb .
+          ZIP_NAME="KernelSU-${{ env.KSU_VERSION }}-${{ matrix.device }}-${{ env.date }}"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          zip -r "$ZIP_NAME.zip" *
+          mv "$ZIP_NAME.zip" $GITHUB_WORKSPACE
+          
+      - name: Upload Anykernel
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: anykernel/*
+          
+      - name: Release
+        if: success()
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files: |
+            kernel-source/out/arch/arm64/boot/*
+            ${{ env.ZIP_NAME }}.zip
+          draft: true
+          tag_name: ${{ github.ref }}-${{ matrix.device }}
           
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
