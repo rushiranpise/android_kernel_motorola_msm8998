@@ -63,7 +63,6 @@ jobs:
            git config --global user.email "rushiranpise17@gmail.com"
            git config --global user.name "Rushi Ranpise"        
 
-           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
            defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
            echo "CONFIG_KPROBES=y" >> $defconfig
            echo "CONFIG_HAVE_KPROBES=y" >> $defconfig
