@@ -93,10 +93,12 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-androideabi-
           output_dir=out
           date=$(date +"%Y%m%d%H%M")
+          middlever=r23
           export PATH="/usr/lib/ccache:$PATH"
           echo "date=$date" >> $GITHUB_ENV
+          echo "middlever=$middlever" >> $GITHUB_ENV
           args="-j`nproc` LLVM=1 LLVM_IAS=1 CC="ccache clang" ARCH=arm64 SUBARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
+            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LOCALVERSION=-$middlever-$date"
           echo "Building kernel with $args"  
           make $args lineageos_${{ matrix.device }}_defconfig && make $args
           
