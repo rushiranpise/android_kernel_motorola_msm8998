@@ -91,7 +91,6 @@ jobs:
         run: |
           export PATH="$GITHUB_WORKSPACE/proton-clang/bin:$PATH"
           export PATH="/usr/lib/ccache:$PATH"
-          git apply $GITHUB_WORKSPACE/.github/patches/4.14/*.patch
           date=$(date +"%Y%m%d%H%M")
           middlever=r23
           echo "date=$date" >> $GITHUB_ENV
@@ -99,9 +98,6 @@ jobs:
           args="-j`nproc` O=out LLVM=1 CCACHE=ccache ARCH=arm64 SUBARCH=arm64 \
             CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LOCALVERSION=-$middlever-$date"
           echo "Building kernel with $args"
-
-          export KBUILD_BUILD_USER="Howard"
-          export KBUILD_BUILD_HOST="MarisaKernel"
 
           make $args ${{ matrix.device }}_defconfig && make $args
 
