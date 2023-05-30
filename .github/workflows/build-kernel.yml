@@ -39,6 +39,8 @@ jobs:
            cd KernelSU
            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
+           git config --global user.email "rushiranpise17@gmail.com"
+           git config --global user.name "Rushi Ranpise"
            git fetch https://github.com/rushiranpise/android_kernel_motorola_msm8998 ksu && git cherry-pick 92a6276987bcdf05a2ef057900222c2f25c8bbef 
 
       - name: Setup Ccache
