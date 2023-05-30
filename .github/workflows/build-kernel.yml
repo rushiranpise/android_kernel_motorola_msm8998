@@ -82,7 +82,6 @@ jobs:
       - name: Build Kernel
         working-directory: kernel-source
         run: |
-          defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
           CLANG=~/clang/clang-r487747/bin
           GCC32=~/arm-linux-androideabi-4.9/bin
           GCC64=~/aarch64-linux-android-4.9/bin
