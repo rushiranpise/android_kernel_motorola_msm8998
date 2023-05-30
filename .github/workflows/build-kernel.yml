@@ -96,7 +96,7 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           echo "date=$date" >> $GITHUB_ENV
           echo "Building kernel with $args"  
-          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig && make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang"
+          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig && make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" -j$(grep -c ^processor /proc/cpuinfo)
           
       - name: Upload KernelSU-${{ matrix.device }}
         uses: actions/upload-artifact@v3
@@ -107,8 +107,6 @@ jobs:
       - name: Prepare Anykernel
         working-directory: anykernel
         run: |
-          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image-dtb .
-          cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/dtbo.img .
           cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz .
           cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz-dtb .
           ZIP_NAME="KernelSU-${{ env.KSU_VERSION }}-${{ matrix.device }}-${{ env.date }}"
