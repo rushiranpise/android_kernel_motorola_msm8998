@@ -120,16 +120,24 @@ jobs:
           name: ${{ env.ZIP_NAME }}
           path: anykernel/*
           
+      - name: Creating Config Info
+        run: |
+          echo "Device codename: ${{ matrix.device }}
+          Source Code Tree: LineageOS branch:lineage-20
+          Build Code: ${{ env.KSU_VERSION }} $(date +%Y%m%d)_${{ github.run_number }}
+          Only For LineageOS Based Roms
+          " >> INFO.txt
+      
       - name: Release
         if: success()
         uses: softprops/action-gh-release@v1
         with:
-          prerelease: true
+          name: "KernelSU For ${{ matrix.device }}"
+          bodyFile: "INFO.txt"
           files: |
             kernel-source/out/arch/arm64/boot/*
             ${{ env.ZIP_NAME }}.zip
-          draft: true
-          tag_name: ${{ github.ref }}-${{ matrix.device }}
+          tag_name: ${{ github.run_number }}-${{ github.ref }}-${{ matrix.device }}
           
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
