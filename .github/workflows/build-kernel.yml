@@ -8,7 +8,7 @@ jobs:
   build:
     strategy:
       matrix:
-        device: [chef,evert]
+        device: [chef]
         
     name: Build KernelSU-${{ matrix.device }}
     runs-on: ubuntu-latest
