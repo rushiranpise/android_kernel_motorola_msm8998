@@ -96,7 +96,7 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           echo "date=$date" >> $GITHUB_ENV
           echo "Building kernel with $args"  
-          make LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig && make LLVM=1 LLVM_IAS=1 CC="ccache clang"
+          make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang" lineageos_${{ matrix.device }}_defconfig && make O=out LLVM=1 LLVM_IAS=1 CC="ccache clang"
           
       - name: Upload KernelSU-${{ matrix.device }}
         uses: actions/upload-artifact@v3
@@ -137,4 +137,4 @@ jobs:
         uses: Mattraks/delete-workflow-runs@v2
         with:
           retain_days: 0
-          keep_minimum_runs: 10
+          keep_minimum_runs: 2
