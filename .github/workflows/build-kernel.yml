@@ -63,14 +63,10 @@ jobs:
            git config --global user.email "rushiranpise17@gmail.com"
            git config --global user.name "Rushi Ranpise"
            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
-           defconfig="arch/arm64/configs/lineageos_${{ matrix.device }}_defconfig"
-           echo "CONFIG_KPROBES=y" >> $defconfig
-           echo "CONFIG_HAVE_KPROBES=y" >> $defconfig
-           echo "CONFIG_KPROBE_EVENTS=y" >> $defconfig
            cd KernelSU
            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
-
+           git fetch https://github.com/rushiranpise/android_kernel_motorola_msm8998 KernelSU && git cherry-pick 8aa5cf8834b3ed72de89cbc7592f679deb597121
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
