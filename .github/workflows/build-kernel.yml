@@ -98,7 +98,7 @@ jobs:
           echo "date=$date" >> $GITHUB_ENV
           echo "middlever=$middlever" >> $GITHUB_ENV
           args="-j`nproc` LLVM=1 LLVM_IAS=1 CC="ccache clang" ARCH=arm64 SUBARCH=arm64 \
-            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LOCALVERSION=-$middlever-$date"
+            CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "
           echo "Building kernel with $args"  
           make $args lineageos_${{ matrix.device }}_defconfig && make $args
           
