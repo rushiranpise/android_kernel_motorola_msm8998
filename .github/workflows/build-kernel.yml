@@ -1,4 +1,4 @@
-name: Build Kernel
+name: Build KernelSU
 on:
   push:
     branches: ["test"]
@@ -76,12 +76,10 @@ jobs:
           
       - name: Creating Config Info
         run: |
-          echo "Device: ${{ matrix.device }}
+          echo "Device codename: ${{ matrix.device }}
           Source Code Tree: LineageOS branch:lineage-20
-          Code: ${{ matrix.device }}
-          Contain KernelSU: YES(Manully_Intergrate)
-          Build Code: $(date +%Y%m%d)_${{ github.run_number }}
-          Only For LineageOS
+          Build Code: ${{ env.KSU_VERSION }} $(date +%Y%m%d)_${{ github.run_number }}
+          Only For LineageOS Based Roms
           " >> INFO.txt
           
       - name: Packaging the Kernel
@@ -97,7 +95,7 @@ jobs:
         uses: ncipollo/release-action@v1.8.6
         with:
           artifacts: ${{ env.ZIP_NAME }}.zip
-          name: "KernelSU"
+          name: "KernelSU For ${{ matrix.device }}"
           tag: " ${{ github.run_number }}-${{ matrix.device }}"
           bodyFile: "INFO.txt"
           token: ${{ secrets.GITHUB_TOKEN }}
