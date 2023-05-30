@@ -132,11 +132,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: "KernelSU For ${{ matrix.device }}"
-          bodyFile: "INFO.txt"
+          body: "INFO.txt"
           files: |
             kernel-source/out/arch/arm64/boot/*
             ${{ env.ZIP_NAME }}.zip
-          tag: ${{ github.run_number }}-${{ github.ref }}-${{ matrix.device }}
+          tag_name: ${{ github.run_number }}-${{ github.ref }}-${{ matrix.device }}
           
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
