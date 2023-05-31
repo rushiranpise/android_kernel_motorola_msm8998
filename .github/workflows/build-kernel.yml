@@ -63,9 +63,7 @@ jobs:
            git config --global user.email "rushiranpise17@gmail.com"
            git config --global user.name "Rushi Ranpise"
 
-           cd KernelSU
-           echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
-           cd -
+
 
       - name: Setup Ccache
         uses: hendrikmuhs/ccache-action@v1.2
@@ -103,7 +101,7 @@ jobs:
         working-directory: anykernel
         run: |
           cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz-dtb .
-          ZIP_NAME="KernelSU-${{ env.KSU_VERSION }}-${{ matrix.device }}-${{ env.date }}"
+          ZIP_NAME="KernelSU-${{ matrix.device }}-${{ env.date }}"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
           zip -r "$ZIP_NAME.zip" *
           mv "$ZIP_NAME.zip" $GITHUB_WORKSPACE
@@ -118,7 +116,7 @@ jobs:
         run: |
           echo "Device codename: ${{ matrix.device }}
           Source Code Tree: LineageOS branch:lineage-20
-          Build Code: ${{ env.KSU_VERSION }} $(date +%Y%m%d)_${{ github.run_number }}
+          Build Code: $(date +%Y%m%d)_${{ github.run_number }}
           Only For LineageOS Based Roms
           " >> INFO.txt
       
