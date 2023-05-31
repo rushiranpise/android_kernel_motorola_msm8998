@@ -46,7 +46,7 @@ jobs:
         with:
           submodules: true
           repository: rushiranpise/android_kernel_motorola_msm8998
-          ref: new
+          ref: t2
           path: kernel-source
           
       - name: Checkout Anykernel
