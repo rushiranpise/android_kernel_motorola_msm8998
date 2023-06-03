@@ -64,7 +64,7 @@ jobs:
            git config --global user.name "Rushi Ranpise"
            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
            cd KernelSU
-           git fetch https://github.com/RyuujiX/KernelSU && git cherry-pick 1f7056b47e3aa6c8f3d05216deb526da3790da5f
+           git fetch https://github.com/tiann/KernelSU && git cherry-pick d014947a542b069b2470c2a4fdeeaa9624c42305
            cd -
 
 
