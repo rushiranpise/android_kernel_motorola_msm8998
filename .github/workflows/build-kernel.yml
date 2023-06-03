@@ -118,8 +118,8 @@ jobs:
           
       - name: Creating Config Info
         run: |
-          echo "Device codename: ${{ matrix.device }}
-          Source Code Tree: LineageOS branch:lineage-20
+          echo "Device: Motorla
+          Device: ${{ matrix.device }}
           Build Code: v-${{ env.KSU_VERSION }}-$(date +%Y%m%d)_${{ github.run_number }}
           Only For LineageOS Based Roms
           " >> INFO.txt
