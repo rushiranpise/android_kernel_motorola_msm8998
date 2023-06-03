@@ -46,7 +46,7 @@ jobs:
         with:
           submodules: true
           repository: rushiranpise/android_kernel_motorola_msm8998
-          ref: lineage-20
+          ref: ksu-manual
           path: kernel-source
           
       - name: Checkout Anykernel
@@ -62,6 +62,10 @@ jobs:
         run: |
            git config --global user.email "rushiranpise17@gmail.com"
            git config --global user.name "Rushi Ranpise"
+           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -
+           cd KernelSU
+           git fetch https://github.com/RyuujiX/KernelSU && git cherry-pick 1f7056b47e3aa6c8f3d05216deb526da3790da5f
+           cd -
 
 
 
