@@ -64,7 +64,7 @@ jobs:
            git config --global user.name "Rushi Ranpise"
            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
            cd KernelSU
-           git reset --hard  2ce76351da04500af366eaad19e34aed14b37015
+           echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
 
 
@@ -105,7 +105,7 @@ jobs:
         working-directory: anykernel
         run: |
           cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz-dtb .
-          ZIP_NAME="KernelSU-${{ matrix.device }}-${{ env.date }}"
+          ZIP_NAME="KernelSU-v-${{ env.KSU_VERSION }}-${{ matrix.device }}-${{ env.date }}"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
           zip -r "$ZIP_NAME.zip" *
           mv "$ZIP_NAME.zip" $GITHUB_WORKSPACE
@@ -120,7 +120,7 @@ jobs:
         run: |
           echo "Device codename: ${{ matrix.device }}
           Source Code Tree: LineageOS branch:lineage-20
-          Build Code: $(date +%Y%m%d)_${{ github.run_number }}
+          Build Code: v-${{ env.KSU_VERSION }}-$(date +%Y%m%d)_${{ github.run_number }}
           Only For LineageOS Based Roms
           " >> INFO.txt
       
