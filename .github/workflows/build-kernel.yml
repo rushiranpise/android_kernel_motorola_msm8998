@@ -63,6 +63,7 @@ jobs:
            git config --global user.email "rushiranpise17@gmail.com"
            git config --global user.name "Rushi Ranpise"
            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+           git reset --hard  2ce76351da04500af366eaad19e34aed14b37015
            cd KernelSU
            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
