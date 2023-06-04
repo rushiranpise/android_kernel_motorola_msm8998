@@ -65,7 +65,6 @@ jobs:
            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
            
            cd KernelSU
-           git reset --hard  2ce76351da04500af366eaad19e34aed14b37015
            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
            cd -
 
