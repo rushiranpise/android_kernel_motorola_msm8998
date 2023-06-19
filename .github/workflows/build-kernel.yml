@@ -57,16 +57,16 @@ jobs:
           ref: master
           path: anykernel     
       
-#       - name: Setup KernelSU
-#         working-directory: kernel-source
-#         run: |
-#            git config --global user.email "rushiranpise17@gmail.com"
-#            git config --global user.name "Rushi Ranpise"
-#            curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
+      - name: Setup KernelSU
+        working-directory: kernel-source
+        run: |
+           git config --global user.email "rushiranpise17@gmail.com"
+           git config --global user.name "Rushi Ranpise"
+           curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s main
            
-#            cd KernelSU
-#            echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
-#            cd -
+           cd KernelSU
+           echo "KSU_VERSION=$(($(git rev-list --count HEAD) + 10200))" >> $GITHUB_ENV
+           cd -
 
 
 
@@ -106,7 +106,7 @@ jobs:
         working-directory: anykernel
         run: |
           cp -f $GITHUB_WORKSPACE/kernel-source/out/arch/arm64/boot/Image.gz-dtb .
-          ZIP_NAME="KernelSU-v-${{ matrix.device }}-${{ env.date }}"
+          ZIP_NAME="KernelSU-v-${{ env.KSU_VERSION }}-${{ matrix.device }}-${{ env.date }}"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
           zip -r "$ZIP_NAME.zip" *
           mv "$ZIP_NAME.zip" $GITHUB_WORKSPACE
