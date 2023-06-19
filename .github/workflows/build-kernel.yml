@@ -45,8 +45,8 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
-          repository: LineageOS/android_kernel_motorola_msm8998
-          ref: lineage-20
+          repository: rushiranpise/android_kernel_motorola_msm8998
+          ref: kernelsu
           path: kernel-source
           
       - name: Checkout Anykernel
@@ -54,7 +54,7 @@ jobs:
         with:
           submodules: true
           repository: rushiranpise/AnyKernel3
-          ref: patch-1
+          ref: master
           path: anykernel     
       
 #       - name: Setup KernelSU
